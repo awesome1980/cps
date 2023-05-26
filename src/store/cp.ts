@@ -73,7 +73,7 @@ export interface ProfileData {
 
 export const useCpStore = defineStore('cp', {
   state: () => ({
-    cpId: 'MAY00000201',
+    cpId: '00000000000',
     serverIp: '3.37.138.206',
     serverPort: 8887,
     power: false,
@@ -105,11 +105,12 @@ export const useCpStore = defineStore('cp', {
     heartbeatInterval: undefined as NodeJS.Timer | undefined,
     messages: [] as Array<Message>,
     userId: '',
-    idTag: '0000000000000002',
+    idTag: '0000000000000000',
     status: '',
     profile: {} as ProfileData,
     meterStart: 0
   }),
+  persist: true,
   actions: {
     togglePower() {
       this.power = !this.power;
