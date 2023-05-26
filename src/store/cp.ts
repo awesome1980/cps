@@ -88,7 +88,8 @@ export const useCpStore = defineStore('cp', {
         chargeAmount: 0,
         chargeFee: 0,
         unitPrice: 0,
-        meterValueIntervalId: undefined as NodeJS.Timer | undefined
+        meterValueIntervalId: undefined as NodeJS.Timer | undefined,
+        meterValueSentTime: -1
       },
       {
         connected: false,
@@ -99,7 +100,8 @@ export const useCpStore = defineStore('cp', {
         chargeAmount: 0,
         chargeFee: 0,
         unitPrice: 0,
-        meterValueIntervalId: undefined as NodeJS.Timer | undefined
+        meterValueIntervalId: undefined as NodeJS.Timer | undefined,
+        meterValueSentTime: -1
       }
     ],
     websocket: null as WebSocket | null,
@@ -275,6 +277,7 @@ export const useCpStore = defineStore('cp', {
             // MeterValues
             this.connector[1].meterValueIntervalId = setInterval(() => {
               const now = new Date();
+              const minutes = now.getMinutes();
 
               this.connector[1].stopTimestamp = new Date();
               this.connector[1].chargeAmount = this.calculateChargeAmount(
@@ -284,7 +287,8 @@ export const useCpStore = defineStore('cp', {
               this.connector[1].chargeFee =
                 (this.connector[1].chargeAmount * this.connector[1].unitPrice) / 1000;
 
-              if (now.getMinutes() % 15 === 0 && now.getSeconds() === 0) {
+              if (minutes % 15 === 0 && minutes !== this.connector[1].meterValueSentTime) {
+                this.connector[1].meterValueSentTime = minutes;
                 this.processMeterValues();
               }
             }, 1000);
@@ -515,6 +519,8 @@ export const useCpStore = defineStore('cp', {
     stopCharging(transactionId: number, isLocal: boolean) {
       //
       clearInterval(this.connector[1].meterValueIntervalId);
+      this.connector[1].meterValueIntervalId = undefined;
+      this.connector[1].meterValueSentTime = -1;
       this.stopTransaction(transactionId, isLocal);
     },
     cardRegistration() {
