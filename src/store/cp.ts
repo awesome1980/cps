@@ -1,5 +1,6 @@
 // Utilities
 import { defineStore } from 'pinia';
+import { v4 as uuid } from 'uuid';
 
 export interface Message {
   date: string;
@@ -544,7 +545,7 @@ export const useCpStore = defineStore('cp', {
       this.sendMessage(message);
     },
     uuid() {
-      return crypto.randomUUID();
+      return uuid();
     },
     sendHeartbeat() {
       const message = [2, this.uuid(), 'Heartbeat', {}];
