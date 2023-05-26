@@ -284,7 +284,7 @@ export const useCpStore = defineStore('cp', {
               this.connector[1].chargeFee =
                 (this.connector[1].chargeAmount * this.connector[1].unitPrice) / 1000;
 
-              if (now.getMinutes() % 15 === 0) {
+              if (now.getMinutes() % 15 === 0 && now.getSeconds() === 0) {
                 this.processMeterValues();
               }
             }, 1000);
