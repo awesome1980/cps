@@ -122,9 +122,14 @@ export const useCpStore = defineStore('cp', {
         this.websocket.onopen = this.onOpen;
         this.websocket.onclose = this.onClose;
         this.websocket.onmessage = this.onMessage;
+        this.websocket.onerror = this.onError;
       } else {
         this.websocket?.close(3001);
       }
+    },
+    onError(event: Event) {
+      alert(`Server connect ${event.type}`);
+      this.power = false;
     },
     toggleConnector(connectorId: number) {
       this.connector[connectorId].connected = !this.connector[connectorId].connected;
