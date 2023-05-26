@@ -118,7 +118,8 @@ export const useCpStore = defineStore('cp', {
       'cpId',
       'serverIp',
       'serverPort',
-      'idTag'
+      'idTag',
+      'meterStart'
     ],
   },
   actions: {
