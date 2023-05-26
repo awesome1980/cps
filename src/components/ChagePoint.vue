@@ -1,5 +1,5 @@
 <template>
-  <v-container class="fill-height">
+  <v-container class="fill-height cps-container">
     <v-row dense class="fill-height" id="height-reference">
       <v-col cols="4">
         <v-card class="mx-auto" variant="outlined" height="77%">
