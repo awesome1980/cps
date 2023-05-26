@@ -113,7 +113,7 @@ export const useCpStore = defineStore('cp', {
   }),
   // persist: true,
   persist: {
-    storage: sessionStorage,
+    storage: localStorage,
     paths: [
       'cpId',
       'serverIp',
