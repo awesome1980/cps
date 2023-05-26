@@ -111,7 +111,16 @@ export const useCpStore = defineStore('cp', {
     profile: {} as ProfileData,
     meterStart: 0
   }),
-  persist: true,
+  // persist: true,
+  persist: {
+    storage: sessionStorage,
+    paths: [
+      'cpId',
+      'serverIp',
+      'serverPort',
+      'idTag'
+    ],
+  },
   actions: {
     togglePower() {
       this.power = !this.power;
