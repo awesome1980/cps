@@ -1,6 +1,7 @@
 // Utilities
 import { defineStore } from 'pinia';
 import { v4 as uuid } from 'uuid';
+import moment from 'moment';
 
 export interface Message {
   date: string;
@@ -89,7 +90,8 @@ export const useCpStore = defineStore('cp', {
         chargeFee: 0,
         unitPrice: 0,
         meterValueIntervalId: undefined as NodeJS.Timer | undefined,
-        meterValueSentTime: -1
+        meterValueSentTime: -1,
+        payId: ''
       },
       {
         connected: false,
@@ -101,7 +103,8 @@ export const useCpStore = defineStore('cp', {
         chargeFee: 0,
         unitPrice: 0,
         meterValueIntervalId: undefined as NodeJS.Timer | undefined,
-        meterValueSentTime: -1
+        meterValueSentTime: -1,
+        payId: ''
       }
     ],
     websocket: null as WebSocket | null,
@@ -116,13 +119,7 @@ export const useCpStore = defineStore('cp', {
   // persist: true,
   persist: {
     storage: localStorage,
-    paths: [
-      'cpId',
-      'serverIp',
-      'serverPort',
-      'idTag',
-      'meterStart'
-    ],
+    paths: ['cpId', 'serverIp', 'serverPort', 'idTag', 'meterStart']
   },
   actions: {
     togglePower() {
@@ -260,6 +257,11 @@ export const useCpStore = defineStore('cp', {
           this.connector[1].unitPrice = data.unitPrice;
           // this.connector[1].unitPrice = 2.1;
           this.startTransaction();
+        } else if (this.status === 'PaymentAuthInfo') {
+          const action: Confirmation = message[2];
+          if (action.status === 'Accepted') {
+            this.startTransaction();
+          }
         } else if (this.status === 'StartTransaction') {
           const action: StartTransactionConfirmation = message[2];
 
@@ -292,6 +294,8 @@ export const useCpStore = defineStore('cp', {
                 this.processMeterValues();
               }
             }, 1000);
+          } else {
+            this.stopCharging(this.connector[1].transactionId, true);
           }
         } else if (this.status === 'StopTransaction') {
           const action: StopTransactionConfirmation = message[2];
@@ -303,6 +307,7 @@ export const useCpStore = defineStore('cp', {
 
           this.connector[0].status = 'Finishing';
           this.connector[1].status = 'Finishing';
+          this.connector[1].payId = '';
           this.status = 'Finishing';
           this.sendStatusNotification(1);
 
@@ -323,6 +328,7 @@ export const useCpStore = defineStore('cp', {
     },
     startTransaction() {
       this.status = 'StartTransaction';
+      const tagId = this.connector[1].payId !== '' ? this.connector[1].payId : this.idTag;
 
       const message = [
         2,
@@ -330,7 +336,7 @@ export const useCpStore = defineStore('cp', {
         'StartTransaction',
         {
           connectorId: 1,
-          idTag: this.idTag,
+          idTag: tagId,
           meterStart: this.meterStart,
           reservationId: 0,
           timestamp: this.timestamp()
@@ -376,6 +382,7 @@ export const useCpStore = defineStore('cp', {
     },
     stopTransaction(transactionId: number, isLocal: boolean) {
       this.status = 'StopTransaction';
+      const tagId = this.connector[1].payId !== '' ? this.connector[1].payId : this.idTag;
 
       this.connector[1].stopTimestamp = new Date();
       this.connector[1].chargeAmount = this.calculateChargeAmount(
@@ -390,7 +397,7 @@ export const useCpStore = defineStore('cp', {
         this.uuid(),
         'StopTransaction',
         {
-          idTag: this.idTag,
+          idTag: tagId,
           meterStop: this.meterStart + Math.round(this.connector[1].chargeAmount),
           reason: isLocal ? 'Local' : 'Remote',
           timestamp: this.timestamp(),
@@ -560,6 +567,77 @@ export const useCpStore = defineStore('cp', {
 
       this.sendMessage(message);
     },
+    /*
+    [
+      2,
+      "5cf1a6e7-9387-4f32-a",
+      "DataTransfer",
+        {
+          "data":
+            "{
+              \"approvalNum\":\"68672730\",
+              \"authAmount\":\"1000\",
+              \"cardNum\":\"55320800********\",
+              \"ccRejectMsg\":\"\",
+              \"connectorId\":1,
+              \"marketNum\":\"725518040      \",
+              \"payId\":\"202306021330331\",
+              \"payMethod\":\"1\",
+              \"pgTransactionNum\":\"NS230602133106167528\",
+              \"publisherName\":\"우리비씨신용\",
+              \"serviceFee\":\"0\",
+              \"tax\":\"90\",
+              \"terminalNum\":\"0\",
+              \"timestamp\":\"2023-06-02T04:31:08.197Z\",
+              \"transactionCode\":\"0\",
+              \"transactionDate\":\"20230602\",
+              \"transactionMethod\":\"1\",
+              \"transactionNum\":\"72550090000602133056\",
+              \"transactionTime\":\"133106\",
+              \"vanRejectMsg\":\" IC카드 정상승인 68672730                                                                                       \"
+            }",
+          "messageId":"paymentAuthInfo.req",
+          "vendorId":"SKSIGNET"
+        }
+    ]
+    */
+    sendPaymentAuthInfo() {
+      this.status = 'PaymentAuthInfo';
+      const timestamp = moment();
+      const approvalNum = this.generateRandomNumber(8);
+      this.connector[1].payId = timestamp.format('YYYYMMDDhhmmss') + '1';
+      const data = {
+        approvalNum: approvalNum,
+        authAmount: '1000',
+        cardNum: '55320800********',
+        ccRejectMsg: '',
+        connectorId: 1,
+        marketNum: '725518040',
+        payId: this.connector[1].payId,
+        payMethod: '1',
+        pgTransactionNum: 'NS' + timestamp.format('YYMMDDhhmmss') + this.generateRandomNumber(6),
+        publisherName: '우리비씨신용',
+        serviceFee: '0',
+        tax: '90',
+        terminalNum: '0',
+        timestamp: timestamp.toISOString(),
+        transactionCode: '0',
+        transactionDate: timestamp.format('YYYYMMDD'),
+        transactionMethod: '1',
+        transactionNum: this.generateRandomNumber(20),
+        transactionTime: timestamp.format('hhmmss'),
+        vanRejectMsg: 'IC카드 정상승인 ' + approvalNum
+      };
+
+      const dataTransfer = {
+        vendorId: 'SKSIGNET',
+        messageId: 'paymentAuthInfo.req',
+        data: JSON.stringify(data)
+      };
+
+      const message = [2, this.uuid(), 'DataTransfer', dataTransfer];
+      this.sendMessage(message);
+    },
     uuid() {
       return uuid();
     },
@@ -620,6 +698,20 @@ export const useCpStore = defineStore('cp', {
     timestamp() {
       const timestamp = new Date();
       return timestamp.toISOString();
+    },
+    generateRandomNumber(length: number): string {
+      const add = 1;
+      let max = 12 - add;
+
+      if (length > max) {
+        return this.generateRandomNumber(max) + this.generateRandomNumber(length - max);
+      }
+
+      max = Math.pow(10, length + add);
+      const min = max / 10; // Math.pow(10, n) basically
+      const number = Math.floor(Math.random() * (max - min + 1)) + min;
+
+      return ('' + number).substring(add);
     }
   }
 });

@@ -85,17 +85,33 @@
           </v-card-title>
           <v-card-text>{{ cpStore.idTag }}</v-card-text>
           <v-card-actions class="text-center">
-            <v-btn
-              class="w-100"
-              variant="outlined"
-              color="primary"
-              :disabled="
-                cpStore.connector[0].status !== 'Tagging' &&
-                cpStore.connector[0].status !== 'Preparing'
-              "
-              @click="cpStore.tag"
-              >Tag</v-btn
-            >
+            <v-row dense>
+              <v-col>
+                <v-btn
+                  class="w-100"
+                  variant="outlined"
+                  color="primary"
+                  :disabled="
+                    cpStore.connector[0].status !== 'Tagging' &&
+                    cpStore.connector[0].status !== 'Preparing'
+                  "
+                  @click="cpStore.tag"
+                >
+                  Tag
+                </v-btn>
+              </v-col>
+              <v-col>
+                <v-btn
+                  class="w-100"
+                  variant="outlined"
+                  color="primary"
+                  :disabled="cpStore.connector[0].status !== 'Preparing'"
+                  @click="cpStore.sendPaymentAuthInfo"
+                >
+                  Pay 1,000
+                </v-btn>
+              </v-col>
+            </v-row>
           </v-card-actions>
         </v-card>
       </v-col>
