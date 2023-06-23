@@ -289,7 +289,8 @@ export const useCpStore = defineStore('cp', {
               this.connector[1].chargeFee =
                 (this.connector[1].chargeAmount * this.connector[1].unitPrice) / 1000;
 
-              if (minutes % 15 === 0 && minutes !== this.connector[1].meterValueSentTime) {
+              if (minutes !== this.connector[1].meterValueSentTime) {
+                // if (minutes % 15 === 0 && minutes !== this.connector[1].meterValueSentTime) {
                 this.connector[1].meterValueSentTime = minutes;
                 this.processMeterValues();
               }
@@ -407,13 +408,13 @@ export const useCpStore = defineStore('cp', {
                 {
                   format: 'Raw',
                   measurand: 'Energy.Active.Import.Register',
-                  unit: 'W',
+                  unit: 'Wh',
                   value: Math.round(this.connector[1].chargeAmount)
                 },
                 {
                   format: 'Raw',
                   measurand: 'Energy.Active.Import.Register',
-                  unit: 'W',
+                  unit: 'Wh',
                   value: 282
                 }
               ],
